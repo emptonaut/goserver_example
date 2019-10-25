@@ -1,16 +1,20 @@
 package goserver
 
-import "net/http"
+import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+)
 
 // Server is the handle on the main server instance
 type Server struct {
 	mux      *http.ServeMux
-	users    UserRepoSqlite3
-	sessions SessionRepoSqlite3
+	users    UserRepo
+	sessions SessionRepo
 }
 
 // NewServer correctly instantiates a new server
-func NewServer(u UserRepoSqlite3, s SessionRepoSqlite3) *Server {
+func NewServer(u UserRepo, s SessionRepo) *Server {
 	server := &Server{
 		mux:      http.NewServeMux(),
 		users:    u,
@@ -34,13 +38,26 @@ func (s *Server) Init() {
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
+	// Get the request body
+	reqBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnavailableForLegalReasons)
+		return
+	}
+
 	// Check for authorization
+	data := &RequestData{}
+	if err := json.Unmarshal(reqBody, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	s.mux.ServeHTTP(w, req)
 }
 
 func (s *Server) getSecretStuff(w http.ResponseWriter, req *http.Request) {
-
+	secrets := "42"
+	w.Write([]byte(secrets))
 }
 
 func (s *Server) userCreate(w http.ResponseWriter, req *http.Request) {

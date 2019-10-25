@@ -2,6 +2,7 @@ package goserver
 
 import (
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -14,9 +15,9 @@ var _ = Describe("Session Repo powered by sqlite3", func() {
 	)
 
 	BeforeEach(func() {
-		db, err = sqlx.Open("sqlite3", ":memory:")
+		db, err = sqlx.Open("sqlite3", "dummy.db")
 		Expect(err).To(BeNil())
-		db.Query(".read db_setup.sql")
+		//db.Query(".read db_setup.sql")
 	})
 
 	AfterEach(func() {
