@@ -1,7 +1,7 @@
 
 COMMON_SRC := common.go $(wildcard session*) $(wildcard user*)
 SERVER_SRC := server.go server/main.go $(COMMON_SRC)
-CLIENT_SRC := client.go $(COMMON_SRC)
+CLIENT_SRC := client.go $(COMMON_SRC) client/main.go
 SERVER_OUT := bin/server
 CLIENT_OUT := bin/client
 DBNAME := dummy.db

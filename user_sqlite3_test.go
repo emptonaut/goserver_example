@@ -76,6 +76,7 @@ var _ = Describe("User Repo powered by sqlite3", func() {
 			BeforeEach(func() {
 				err = repo.CreateUser(u)
 				Expect(err).To(BeNil())
+				Expect(u.ID).To(Equal(1))
 			})
 
 			Describe("Changing a user's password", func() {

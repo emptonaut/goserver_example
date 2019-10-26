@@ -2,6 +2,7 @@ package goserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -39,7 +40,7 @@ func (s *Server) Init() {
 
 	s.endpoints["/user/create"] = &endpoint{s.userCreate, false}
 	s.endpoints["/user/authenticate"] = &endpoint{s.userAuthenticate, false}
-	s.endpoints["/secrets"] = &endpoint{s.getSecretStuff, true}
+	s.endpoints["/secret"] = &endpoint{s.getSecretStuff, true}
 	s.endpoints["/user/changePasswd"] = &endpoint{s.userChangePasswd, true}
 
 	for key, val := range s.endpoints {
@@ -51,31 +52,40 @@ func (s *Server) Init() {
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
-	// Get the request body
-	_, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnavailableForLegalReasons)
-		return
-	}
-
-	if _, ok := s.endpoints[req.URL.Path]; ok {
-
-		// Check for authorization
-		//data := &RequestData{}
-		//if err := json.Unmarshal(reqBody, data); err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	return
-		//}
+	fmt.Println(req.URL.Path)
+	if endpoint, ok := s.endpoints[req.URL.Path]; ok {
 
 		// First see if we need to have authentication for this endpoint
+		if endpoint.authRequired {
+			// Get the request body
+			reqBody, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnavailableForLegalReasons)
+				return
+			}
 
-		// If yes, check for a token
+			data := &RequestData{}
+			if err := json.Unmarshal(reqBody, data); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-		// If no token, return not authorized
+			// Otherwise, lookup the token and see if it's valid
+			authorized := true
+			if data.Token != "" {
+				authorized = false
+			}
 
-		// Otherwise, lookup the token and see if it's valid
+			session := &Session{Token: data.Token}
+			if err = s.sessions.GetByID(session); err != nil {
+				authorized = false
+			}
 
-		// If valid, allow through
+			if !authorized {
+				http.Error(w, "please authenticate", http.StatusUnauthorized)
+				return
+			}
+		}
 
 		s.mux.ServeHTTP(w, req)
 	} else {

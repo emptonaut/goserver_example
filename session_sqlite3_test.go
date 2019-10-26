@@ -1,13 +1,15 @@
 package goserver
 
 import (
+	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = XDescribe("Session Repo powered by sqlite3", func() {
+var _ = Describe("Session Repo powered by sqlite3", func() {
 
 	var (
 		db  *sqlx.DB
@@ -49,14 +51,21 @@ var _ = XDescribe("Session Repo powered by sqlite3", func() {
 			}
 		})
 
+		AfterEach(func() {
+			_, err = db.Exec("DELETE FROM sessions")
+			Expect(err).To(BeNil())
+			_, err = db.Exec("delete from sqlite_sequence where name='sessions';")
+			Expect(err).To(BeNil())
+		})
+
 		Describe("Creating a session", func() {
 			It("should create a good session", func() {
 				var ss []*Session
 
-				err = repo.CreateSession(s)
+				err = repo.Create(s)
 				Expect(err).To(BeNil())
 
-				err = db.Select(ss, "SELECT * FROM sessions")
+				err = db.Select(&ss, "SELECT * FROM sessions")
 				Expect(err).To(BeNil())
 				Expect(len(ss)).To(Equal(1))
 				s.ID = 1
@@ -69,16 +78,17 @@ var _ = XDescribe("Session Repo powered by sqlite3", func() {
 				ss []*Session
 			)
 
-			BeforeEach(func() {
-				err = repo.CreateSession(s)
+			JustBeforeEach(func() {
+				err = repo.Create(s)
 				Expect(err).To(BeNil())
+				Expect(s.ID).To(Equal(1))
 			})
 
 			Describe("Deleting a session", func() {
 				It("Should delete", func() {
-					err = repo.DeleteSession(s)
+					err = repo.Delete(s)
 					Expect(err).To(BeNil())
-					err = db.Select(ss, "SELECT * FROM sessions")
+					err = db.Select(&ss, "SELECT * FROM sessions")
 					Expect(err).To(BeNil())
 					Expect(len(ss)).To(Equal(0))
 				})
@@ -86,11 +96,12 @@ var _ = XDescribe("Session Repo powered by sqlite3", func() {
 
 			Describe("Retrieve a session", func() {
 				It("should get back the existing session", func() {
-					err = repo.GetSession(s)
+					fmt.Println(s)
+					uut := &Session{ID: 1}
+					err = repo.GetByID(uut)
 					Expect(err).To(BeNil())
-					Expect(len(ss)).To(Equal(1))
 					s.ID = 1
-					Expect(ss[0]).To(Equal(s))
+					Expect(uut).To(Equal(s))
 				})
 			})
 		})

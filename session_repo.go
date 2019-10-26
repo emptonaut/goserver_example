@@ -1,7 +1,8 @@
 package goserver
 
+// SessionRepo defines the basic interface for managing authentication sessions
 type SessionRepo interface {
-	CreateSession(s *Session) error
-	DeleteSession(s *Session) error
-	GetSession(s *Session) error
+	Create(s *Session) error
+	Delete(s *Session) error
+	GetByID(s *Session) error
 }

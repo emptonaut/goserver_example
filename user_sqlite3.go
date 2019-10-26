@@ -60,7 +60,7 @@ func (repo *UserRepoSqlite3) CreateUser(s *User) error {
 	if err == nil {
 		var id int64
 		id, err = res.LastInsertId()
-		if err != nil {
+		if err == nil {
 			s.ID = int(id)
 		}
 	}
@@ -74,7 +74,7 @@ func (repo *UserRepoSqlite3) UpdateUserPasswd(s *User) (err error) {
 	return
 }
 
-// GetUserByID fills the pass User struct's fields using the ID field, which
+// GetUserByID fills the passed User struct's fields using the ID field, which
 // must be filled in
 func (repo *UserRepoSqlite3) GetUserByID(s *User) (err error) {
 	err = repo.getByIDStmt.Get(s, s)
