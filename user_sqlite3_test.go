@@ -6,16 +6,15 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = XDescribe("User Repo powered by sqlite3", func() {
+var _ = Describe("User Repo powered by sqlite3", func() {
 	var (
 		db  *sqlx.DB
 		err error
 	)
 
 	BeforeEach(func() {
-		db, err = sqlx.Open("sqlite3", ":memory:")
+		db, err = sqlx.Open("sqlite3", "dummy.db")
 		Expect(err).To(BeNil())
-		db.Query(".read db_setup.sql")
 	})
 
 	AfterEach(func() {
@@ -47,6 +46,13 @@ var _ = XDescribe("User Repo powered by sqlite3", func() {
 			}
 		})
 
+		AfterEach(func() {
+			_, err = db.Exec("DELETE FROM users ")
+			Expect(err).To(BeNil())
+			_, err = db.Exec("delete from sqlite_sequence where name='users';")
+			Expect(err).To(BeNil())
+		})
+
 		Describe("Creating a user", func() {
 			It("Should create a user", func() {
 				var uu []*User
@@ -54,7 +60,7 @@ var _ = XDescribe("User Repo powered by sqlite3", func() {
 				err = repo.CreateUser(u)
 				Expect(err).To(BeNil())
 
-				err = db.Select(uu, "SELECT * FROM sessions")
+				err = db.Select(&uu, "SELECT * FROM users")
 				Expect(err).To(BeNil())
 				Expect(len(uu)).To(Equal(1))
 				u.ID = 1
@@ -62,15 +68,15 @@ var _ = XDescribe("User Repo powered by sqlite3", func() {
 			})
 		})
 
-		BeforeEach(func() {
-			err = repo.CreateUser(u)
-			Expect(err).To(BeNil())
-		})
-
 		Context("given an existing user", func() {
 			var (
 				uu []*User
 			)
+
+			BeforeEach(func() {
+				err = repo.CreateUser(u)
+				Expect(err).To(BeNil())
+			})
 
 			Describe("Changing a user's password", func() {
 				It("set the existing user's password", func() {
@@ -78,7 +84,7 @@ var _ = XDescribe("User Repo powered by sqlite3", func() {
 					err = repo.UpdateUserPasswd(u)
 					Expect(err).To(BeNil())
 
-					err = db.Select(uu, "SELECT * FROM seuuions")
+					err = db.Select(&uu, "SELECT * FROM users")
 					Expect(err).To(BeNil())
 					Expect(len(uu)).To(Equal(1))
 					u.ID = 1
@@ -88,11 +94,11 @@ var _ = XDescribe("User Repo powered by sqlite3", func() {
 
 			Describe("Authorize a user", func() {
 				It("should get back the existing user", func() {
-					err = repo.GetUser(u)
-					Expect(err).To(BeNil())
-					Expect(len(uu)).To(Equal(1))
 					u.ID = 1
-					Expect(uu[0]).To(Equal(u))
+					uut := &User{ID: 1}
+					err = repo.GetUserByID(uut)
+					Expect(err).To(BeNil())
+					Expect(uut).To(Equal(u))
 				})
 			})
 		})

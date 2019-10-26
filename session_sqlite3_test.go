@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Session Repo powered by sqlite3", func() {
+var _ = XDescribe("Session Repo powered by sqlite3", func() {
 
 	var (
 		db  *sqlx.DB

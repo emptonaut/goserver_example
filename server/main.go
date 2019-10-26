@@ -9,13 +9,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/jmoiron/sqlx"
-	shoeserv "github.com/shoelick/goserver_example"
+	shoe "github.com/shoelick/goserver_example"
 )
 
 func main() {
 
 	// init DB
-	db, err := sqlx.Open("sqlite3", ":memory:")
+	db, err := sqlx.Open("sqlite3", "dummy.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,19 +25,19 @@ func main() {
 	}
 
 	// setup db repositories
-	var userRepo *shoeserv.UserRepoSqlite3
-	userRepo, err = shoeserv.NewUserRepoSqlite3(db)
+	var userRepo *shoe.UserRepoSqlite3
+	userRepo, err = shoe.NewUserRepoSqlite3(db)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var sessionRepo *shoeserv.SessionRepoSqlite3
-	sessionRepo, err = shoeserv.NewSessionRepoSqlite3(db)
+	var sessionRepo *shoe.SessionRepoSqlite3
+	sessionRepo, err = shoe.NewSessionRepoSqlite3(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// setup server and go
-	s := shoeserv.NewServer(userRepo, sessionRepo)
+	s := shoe.NewServer(userRepo, sessionRepo)
 	http.Handle("/", s)
 	err = http.ListenAndServeTLS(":443", "server.crt", "server.key", nil)
 	if err != nil {
