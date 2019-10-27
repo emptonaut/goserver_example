@@ -1,16 +1,16 @@
 
 COMMON_SRC := common.go $(wildcard session*) $(wildcard user*)
-SERVER_SRC := server.go server/main.go $(COMMON_SRC)
-CLIENT_SRC := client.go $(COMMON_SRC) client/main.go
+SERVER_SRC := server.go $(COMMON_SRC) $(wildcard server/*.go)
+CLIENT_SRC := client.go $(COMMON_SRC) $(wildcard client/*.go)
 SERVER_OUT := bin/server
 CLIENT_OUT := bin/client
 DBNAME := dummy.db
 
 .PHONY: db test
 
-server: $(SERVER_OUT)
-
 all: server client
+
+server: $(SERVER_OUT)
 
 $(SERVER_OUT): $(SERVER_SRC)
 	mkdir -p bin

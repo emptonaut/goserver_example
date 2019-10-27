@@ -3,7 +3,7 @@
 
 CREATE TABLE users(
     id integer PRIMARY KEY AUTOINCREMENT,
-    username text NOT NULL,
+    username text UNIQUE NOT NULL,
     password text NOT NULL,
     salt text NOT NULL
 );

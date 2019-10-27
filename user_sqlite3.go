@@ -8,10 +8,11 @@ import (
 
 // UserRepoSqlite3 fulfills UserRepo using a Sqlite3 database
 type UserRepoSqlite3 struct {
-	db               *sqlx.DB
-	insertStmt       *sqlx.NamedStmt
-	updatePasswdStmt *sqlx.NamedStmt
-	getByIDStmt      *sqlx.NamedStmt
+	db                *sqlx.DB
+	insertStmt        *sqlx.NamedStmt
+	updatePasswdStmt  *sqlx.NamedStmt
+	getByIDStmt       *sqlx.NamedStmt
+	getByUsernameStmt *sqlx.NamedStmt
 }
 
 const (
@@ -27,9 +28,10 @@ const (
 		WHERE id=:id
 	`
 
-	userGetByID = `
-		SELECT * FROM users WHERE id=:id LIMIT 1
-	`
+	userSelectBase = `SELECT * FROM users`
+
+	userGetByID       = userSelectBase + ` WHERE id=:id LIMIT 1`
+	userGetByUsername = userSelectBase + ` WHERE username=:username LIMIT 1`
 )
 
 // NewUserRepoSqlite3 prepares a repo given a sqlite db handle
@@ -48,6 +50,10 @@ func NewUserRepoSqlite3(db *sqlx.DB) (*UserRepoSqlite3, error) {
 	repo.getByIDStmt, err = db.PrepareNamed(userGetByID)
 	if err != nil {
 		return repo, fmt.Errorf("Failed to prepare statement `%s`: %v", userGetByID, err)
+	}
+	repo.getByUsernameStmt, err = db.PrepareNamed(userGetByUsername)
+	if err != nil {
+		return repo, fmt.Errorf("Failed to prepare statement `%s`: %v", userGetByUsername, err)
 	}
 
 	return repo, err
@@ -78,5 +84,12 @@ func (repo *UserRepoSqlite3) UpdateUserPasswd(s *User) (err error) {
 // must be filled in
 func (repo *UserRepoSqlite3) GetUserByID(s *User) (err error) {
 	err = repo.getByIDStmt.Get(s, s)
+	return
+}
+
+// GetUserByUsername fills the passed User struct's fields using the username field, which
+// must be filled in
+func (repo *UserRepoSqlite3) GetUserByUsername(s *User) (err error) {
+	err = repo.getByUsernameStmt.Get(s, s)
 	return
 }

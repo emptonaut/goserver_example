@@ -93,16 +93,22 @@ var _ = Describe("User Repo powered by sqlite3", func() {
 				})
 			})
 
-			Describe("Authorize a user", func() {
-				It("should get back the existing user", func() {
+			Describe("Retrieve a user", func() {
+				It("should get back the existing user by ID", func() {
 					u.ID = 1
 					uut := &User{ID: 1}
 					err = repo.GetUserByID(uut)
 					Expect(err).To(BeNil())
 					Expect(uut).To(Equal(u))
 				})
+				It("should get back the existing user by username", func() {
+					u.ID = 1
+					uut := &User{Username: "dummy"}
+					err = repo.GetUserByUsername(uut)
+					Expect(err).To(BeNil())
+					Expect(uut).To(Equal(u))
+				})
 			})
 		})
-
 	})
 })

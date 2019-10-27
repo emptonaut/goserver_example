@@ -1,8 +1,6 @@
 package goserver
 
 import (
-	"fmt"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	. "github.com/onsi/ginkgo"
@@ -95,10 +93,16 @@ var _ = Describe("Session Repo powered by sqlite3", func() {
 			})
 
 			Describe("Retrieve a session", func() {
-				It("should get back the existing session", func() {
-					fmt.Println(s)
+				It("should get back the existing session by ID", func() {
 					uut := &Session{ID: 1}
 					err = repo.GetByID(uut)
+					Expect(err).To(BeNil())
+					s.ID = 1
+					Expect(uut).To(Equal(s))
+				})
+				It("should get back the existing session", func() {
+					uut := &Session{Token: "stupid"}
+					err = repo.GetByToken(uut)
 					Expect(err).To(BeNil())
 					s.ID = 1
 					Expect(uut).To(Equal(s))

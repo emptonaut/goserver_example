@@ -5,4 +5,5 @@ type SessionRepo interface {
 	Create(s *Session) error
 	Delete(s *Session) error
 	GetByID(s *Session) error
+	GetByToken(s *Session) error
 }

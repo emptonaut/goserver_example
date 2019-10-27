@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -72,12 +74,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 			// Otherwise, lookup the token and see if it's valid
 			authorized := true
-			if data.Token != "" {
+			if data.Token == "" {
 				authorized = false
 			}
 
 			session := &Session{Token: data.Token}
-			if err = s.sessions.GetByID(session); err != nil {
+			if err = s.sessions.GetByToken(session); err != nil {
+				log.Infof("Attempt auth with nonexistent token: %s", data.Token)
 				authorized = false
 			}
 
@@ -95,12 +98,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) getSecretStuff(w http.ResponseWriter, req *http.Request) {
 	secrets := "42"
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(secrets))
 }
 
 func (s *Server) userCreate(w http.ResponseWriter, req *http.Request) {
-	data, err := parseRequestData(w, req)
+	data, err := ParseRequestData(req.Body)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
 	}
 
@@ -120,46 +125,82 @@ func (s *Server) userCreate(w http.ResponseWriter, req *http.Request) {
 		Username: data.Username,
 		Password: hash,
 	}
-	s.users.CreateUser(user)
+	// We're assuming an enforcement of unique usernames at the database level.
+	// We could check for the username before we hash, but it's probably the
+	// same number of cycles or more to do a DB query
+	err = s.users.CreateUser(user)
+	if err != nil {
+		fmt.Println(err)
+		data.Error = err.Error()
+	} else {
+		log.Printf("Created user %s", user.Username)
+	}
 
+	data.Password = ""
+	WriteRequestData(data, w, http.StatusOK)
 }
 
 func (s *Server) userChangePasswd(w http.ResponseWriter, req *http.Request) {
-	_, err := parseRequestData(w, req)
+	_, err := ParseRequestData(req.Body)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
 	}
 
+	WriteRequestData(&RequestData{}, w, http.StatusOK)
 }
 
 func (s *Server) userAuthenticate(w http.ResponseWriter, req *http.Request) {
-	_, err := parseRequestData(w, req)
+	data, err := ParseRequestData(req.Body)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
 	}
 
-}
+	u := &User{Username: data.Username}
+	if err := s.users.GetUserByUsername(u); err != nil {
+		http.Error(w, "authentication failed", http.StatusUnauthorized)
+		return
+	}
 
-// The better solution to something like this would be to rewrite the http.Handler interface to accept
-// a third argument for common data that every endpoint would require, such as session data.
-// However, that's beyond the scope of this example exercise. For now, every endpoint must
-// reparse the RequestData even if the root receive (ServerHTTP) already parsed it. Known design flaw.
-func parseRequestData(w http.ResponseWriter, req *http.Request) (*RequestData, error) {
-	reqBody, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusExpectationFailed)
-		return nil, err
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(data.Password)); err != nil {
+		http.Error(w, "authentication failed", http.StatusUnauthorized)
+		return
 	}
-	data := &RequestData{}
-	err = json.Unmarshal(reqBody, data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusExpectationFailed)
-		return nil, err
+
+	// Password was good; create a session and send back the token
+	token := uuid.New().String()
+	// TODO record location for session and expire time
+	session := &Session{
+		Token:  token,
+		UserID: u.ID,
 	}
-	return data, err
+
+	if err := s.sessions.Create(session); err != nil {
+		// Server failure
+		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("Session created for %s", u.Username)
+
+	// Send back the token
+	data.Token = token
+	data.Password = ""
+	if err = WriteRequestData(data, w, http.StatusOK); err != nil {
+		log.Error(err)
+	}
 }
 
 func hashPasswd(passwd []byte) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword(passwd, bcrypt.MinCost) // TODO check cost?
 	return string(hash), err
+}
+
+func WriteRequestData(data *RequestData, w http.ResponseWriter, code int) error {
+	bits, err := json.Marshal(data)
+	if err == nil {
+		w.WriteHeader(code)
+		w.Write(bits)
+	}
+	return err
 }

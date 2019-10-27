@@ -5,4 +5,5 @@ type UserRepo interface {
 	CreateUser(user *User) error
 	UpdateUserPasswd(user *User) error
 	GetUserByID(user *User) error
+	GetUserByUsername(user *User) error
 }

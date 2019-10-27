@@ -8,10 +8,11 @@ import (
 
 // SessionRepoSqlite3 fulfills SessionRepo using a Sqlite3 database
 type SessionRepoSqlite3 struct {
-	db          *sqlx.DB
-	insertStmt  *sqlx.NamedStmt
-	getByIDStmt *sqlx.NamedStmt
-	deleteStmt  *sqlx.NamedStmt
+	db             *sqlx.DB
+	insertStmt     *sqlx.NamedStmt
+	getByIDStmt    *sqlx.NamedStmt
+	getByTokenStmt *sqlx.NamedStmt
+	deleteStmt     *sqlx.NamedStmt
 }
 
 const (
@@ -20,9 +21,10 @@ const (
 		VALUES (:userid, :token, :origin, :expires)
 	`
 
-	sessionGetByID = `
-		SELECT * FROM sessions WHERE id=:id LIMIT 1
-	`
+	sessionGetBase = `SELECT * FROM sessions`
+
+	sessionGetByID    = sessionGetBase + ` WHERE id=:id LIMIT 1`
+	sessionGetByToken = sessionGetBase + ` WHERE token=:token LIMIT 1`
 
 	sessionDelete = `
 		DELETE FROM sessions WHERE id=:id
@@ -44,6 +46,10 @@ func NewSessionRepoSqlite3(db *sqlx.DB) (*SessionRepoSqlite3, error) {
 	repo.getByIDStmt, err = db.PrepareNamed(sessionGetByID)
 	if err != nil {
 		return repo, fmt.Errorf("Failed to prepare statement `%s`: %v", sessionGetByID, err)
+	}
+	repo.getByTokenStmt, err = db.PrepareNamed(sessionGetByToken)
+	if err != nil {
+		return repo, fmt.Errorf("Failed to prepare statement `%s`: %v", sessionGetByToken, err)
 	}
 
 	return repo, err
@@ -72,5 +78,12 @@ func (repo *SessionRepoSqlite3) Delete(s *Session) (err error) {
 // must be filled in
 func (repo *SessionRepoSqlite3) GetByID(s *Session) (err error) {
 	err = repo.getByIDStmt.Get(s, s)
+	return
+}
+
+// GetByID fills the passed Session struct's fields using the ID field, which
+// must be filled in
+func (repo *SessionRepoSqlite3) GetByToken(s *Session) (err error) {
+	err = repo.getByTokenStmt.Get(s, s)
 	return
 }
