@@ -15,3 +15,6 @@ _ TODO elucidate_
 - Server's hardcoded configuration in main
 - Documentation (at least sequence diagram in this readme)
 - Helper function commonality/design (ties into first point)
+- Lack of client dependency injection
+- Very limited request format (see next point)
+- Should have used gRPC in hindsight
