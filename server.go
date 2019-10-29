@@ -1,6 +1,7 @@
 package goserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -44,6 +45,7 @@ func (s *Server) Init() {
 	s.endpoints["/user/authenticate"] = &endpoint{s.userAuthenticate, false}
 	s.endpoints["/secret"] = &endpoint{s.getSecretStuff, true}
 	s.endpoints["/user/changePasswd"] = &endpoint{s.userChangePasswd, true}
+	s.endpoints["/user/logout"] = &endpoint{s.userLogout, true}
 
 	for key, val := range s.endpoints {
 		s.mux.HandleFunc(key, val.handler)
@@ -54,7 +56,6 @@ func (s *Server) Init() {
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
-	fmt.Println(req.URL.Path)
 	if endpoint, ok := s.endpoints[req.URL.Path]; ok {
 
 		// First see if we need to have authentication for this endpoint
@@ -62,15 +63,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// Get the request body
 			reqBody, err := ioutil.ReadAll(req.Body)
 			if err != nil {
+				log.Error(err)
 				http.Error(w, err.Error(), http.StatusUnavailableForLegalReasons)
 				return
 			}
 
 			data := &RequestData{}
 			if err := json.Unmarshal(reqBody, data); err != nil {
+				log.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
 
 			// Otherwise, lookup the token and see if it's valid
 			authorized := true
@@ -116,6 +120,7 @@ func (s *Server) userCreate(w http.ResponseWriter, req *http.Request) {
 
 	hash, err := hashPasswd([]byte(data.Password))
 	if err != nil {
+		log.Error(err)
 		http.Error(w, "password hash failed", http.StatusExpectationFailed)
 		return
 	}
@@ -130,29 +135,65 @@ func (s *Server) userCreate(w http.ResponseWriter, req *http.Request) {
 	// same number of cycles or more to do a DB query
 	err = s.users.CreateUser(user)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		data.Error = err.Error()
 	} else {
 		log.Printf("Created user %s", user.Username)
 	}
 
 	data.Password = ""
-	WriteRequestData(data, w, http.StatusOK)
+	writeRequestData(data, w, http.StatusOK)
 }
 
 func (s *Server) userChangePasswd(w http.ResponseWriter, req *http.Request) {
-	_, err := ParseRequestData(req.Body)
+	data, err := ParseRequestData(req.Body)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
 	}
 
-	WriteRequestData(&RequestData{}, w, http.StatusOK)
+	// Hash new password
+	hash, err := hashPasswd([]byte(data.Password))
+	if err != nil {
+		log.Error(err)
+		http.Error(w, "password hash failed", http.StatusExpectationFailed)
+		return
+	}
+
+	// Get user ID from session
+	sesh := &Session{Token: data.Token}
+	err = s.sessions.GetByToken(sesh)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// Require all of username and new password
+	u := &User{
+		ID:       sesh.UserID,
+		Username: data.Username,
+		Password: hash,
+	}
+	log.Infof("Changing password for %v", u)
+
+	var status = http.StatusOK
+	data.Password = ""
+	data.Token = ""
+
+	if err = s.users.UpdateUserPasswd(u); err != nil {
+		log.Error(err)
+		data.Error = err.Error()
+		status = http.StatusInternalServerError
+	}
+
+	writeRequestData(data, w, status)
 }
 
 func (s *Server) userAuthenticate(w http.ResponseWriter, req *http.Request) {
 	data, err := ParseRequestData(req.Body)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
 	}
@@ -178,6 +219,7 @@ func (s *Server) userAuthenticate(w http.ResponseWriter, req *http.Request) {
 
 	if err := s.sessions.Create(session); err != nil {
 		// Server failure
+		fmt.Println(err)
 		http.Error(w, "Failed to create session", http.StatusInternalServerError)
 		return
 	}
@@ -186,9 +228,25 @@ func (s *Server) userAuthenticate(w http.ResponseWriter, req *http.Request) {
 	// Send back the token
 	data.Token = token
 	data.Password = ""
-	if err = WriteRequestData(data, w, http.StatusOK); err != nil {
+	if err = writeRequestData(data, w, http.StatusOK); err != nil {
 		log.Error(err)
 	}
+}
+
+func (s *Server) userLogout(w http.ResponseWriter, req *http.Request) {
+	data, err := ParseRequestData(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusExpectationFailed)
+		return
+	}
+
+	sesh := &Session{Token: data.Token}
+	if err := s.sessions.DeleteByToken(sesh); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed to delete session", http.StatusInternalServerError)
+	}
+	log.Infof("Logged out %s", sesh.Token)
 }
 
 func hashPasswd(passwd []byte) (string, error) {
@@ -196,7 +254,7 @@ func hashPasswd(passwd []byte) (string, error) {
 	return string(hash), err
 }
 
-func WriteRequestData(data *RequestData, w http.ResponseWriter, code int) error {
+func writeRequestData(data *RequestData, w http.ResponseWriter, code int) error {
 	bits, err := json.Marshal(data)
 	if err == nil {
 		w.WriteHeader(code)

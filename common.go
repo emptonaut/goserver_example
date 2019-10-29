@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // RequestData is our general purpose container for data sent between client and server.
@@ -25,13 +23,11 @@ type RequestData struct {
 func ParseRequestData(body io.ReadCloser) (*RequestData, error) {
 	reqBody, err := ioutil.ReadAll(body)
 	if err != nil {
-		log.Error("failed to complete read")
 		return nil, err
 	}
 	data := &RequestData{}
 	err = json.Unmarshal(reqBody, data)
 	if err != nil {
-		log.Error("failed to unmarshal")
 		return nil, err
 	}
 	return data, err

@@ -56,6 +56,47 @@ func (c *ShoeClient) CreateUser(username, password string) (err error) {
 	return
 }
 
+func (c *ShoeClient) ChangePasswd(username, password, token string) (err error) {
+
+	data := &RequestData{
+		Username: username,
+		Password: password,
+		Token:    token,
+	}
+
+	var resp *http.Response
+	if resp, err = c.Request("/user/changePasswd", data); err != nil {
+		return errors.New(resp.Status)
+	}
+
+	// attempt parse
+	data, err = ParseRequestData(resp.Body)
+	if err != nil {
+		return fmt.Errorf("Status %s: %s", resp.Status, err.Error())
+	}
+
+	if resp.Status != "200 OK" {
+		err = fmt.Errorf("Status %s: %s", resp.Status, data.Error)
+	}
+
+	return
+}
+
+func (c *ShoeClient) Logout(token string) error {
+	data := &RequestData{
+		Token: token,
+	}
+
+	if resp, err := c.Request("/user/logout", data); err != nil {
+		return err
+	} else {
+		if resp.Status != "200 OK" {
+			return fmt.Errorf("Got status %s", resp.Status)
+		}
+	}
+	return nil
+}
+
 func (c *ShoeClient) Authenticate(username, password string) (string, error) {
 	data := &RequestData{
 		Username: username,

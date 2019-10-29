@@ -84,7 +84,7 @@ var _ = Describe("Session Repo powered by sqlite3", func() {
 
 			Describe("Deleting a session", func() {
 				It("Should delete", func() {
-					err = repo.Delete(s)
+					err = repo.DeleteByToken(s)
 					Expect(err).To(BeNil())
 					err = db.Select(&ss, "SELECT * FROM sessions")
 					Expect(err).To(BeNil())

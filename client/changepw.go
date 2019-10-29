@@ -12,20 +12,20 @@ import (
 )
 
 var passwdCmd = &cobra.Command{
-	Use:   "passwd <username>",
+	Use:   "passwd <username> <token>",
 	Short: "Change user password",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Password: ")
+		fmt.Print("New Password: ")
 		passwd, _ := reader.ReadString('\n')
 
 		c := shoe.NewShoeClient(viper.GetString("host"), []byte{}, true)
-		tok, err := c.Authenticate(args[0], passwd)
+		err := c.ChangePasswd(args[0], passwd, args[1])
 
 		if err == nil {
-			log.Println(tok)
+			log.Println("OK")
 		}
 
 		return err

@@ -1,18 +1,18 @@
 package main
 
 import (
-	// "fmt"
-	// "io"
-	"log"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/jmoiron/sqlx"
 	shoe "github.com/shoelick/goserver_example"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+
+	log.SetReportCaller(true)
 
 	// init DB
 	db, err := sqlx.Open("sqlite3", "dummy.db")

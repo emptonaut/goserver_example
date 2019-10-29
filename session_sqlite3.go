@@ -27,7 +27,7 @@ const (
 	sessionGetByToken = sessionGetBase + ` WHERE token=:token LIMIT 1`
 
 	sessionDelete = `
-		DELETE FROM sessions WHERE id=:id
+		DELETE FROM sessions WHERE token=:token
 	`
 )
 
@@ -69,7 +69,7 @@ func (repo *SessionRepoSqlite3) Create(s *Session) error {
 }
 
 // Delete deletes the given session using the ID field
-func (repo *SessionRepoSqlite3) Delete(s *Session) (err error) {
+func (repo *SessionRepoSqlite3) DeleteByToken(s *Session) (err error) {
 	_, err = repo.deleteStmt.Exec(s)
 	return
 }
