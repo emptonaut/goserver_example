@@ -68,6 +68,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 
+			// We parse the request body here and at the beginning of every
+			// endpoint.
+			// The better solution to something like this would be to rewrite
+			// the http.Handler interface to accept. A third argument for common
+			// data that every endpoint would require, such as session data.
+			// However, that's beyond the scope of this example exercise. For
+			// now, every endpoint must
+			// reparse the RequestData even if the root receive (ServerHTTP)
+			// already parsed it. Known design flaw.
 			data := &RequestData{}
 			if err := json.Unmarshal(reqBody, data); err != nil {
 				log.Error(err)

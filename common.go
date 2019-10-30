@@ -15,11 +15,7 @@ type RequestData struct {
 	Error    string
 }
 
-// TODO move comment to server context or readme
-// The better solution to something like this would be to rewrite the http.Handler interface to accept
-// a third argument for common data that every endpoint would require, such as session data.
-// However, that's beyond the scope of this example exercise. For now, every endpoint must
-// reparse the RequestData even if the root receive (ServerHTTP) already parsed it. Known design flaw.
+// ParseRequestData is used to unmarshal data in requests and responses.
 func ParseRequestData(body io.ReadCloser) (*RequestData, error) {
 	reqBody, err := ioutil.ReadAll(body)
 	if err != nil {

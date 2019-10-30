@@ -1,5 +1,5 @@
 -- quick and dirty database schema init
--- column names should be reflected in Users.go
+-- column names should be reflected in user.go and session.go
 
 CREATE TABLE users(
     id integer PRIMARY KEY AUTOINCREMENT,

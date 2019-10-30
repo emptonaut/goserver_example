@@ -46,7 +46,6 @@ func (c *ShoeClient) CreateUser(username, password string) (err error) {
 	}
 
 	if resp.Status == "200 OK" {
-
 		data, err = ParseRequestData(resp.Body)
 		if data.Error != "" {
 			err = errors.New(data.Error)
@@ -57,7 +56,6 @@ func (c *ShoeClient) CreateUser(username, password string) (err error) {
 }
 
 func (c *ShoeClient) ChangePasswd(username, password, token string) (err error) {
-
 	data := &RequestData{
 		Username: username,
 		Password: password,
@@ -118,7 +116,6 @@ func (c *ShoeClient) Authenticate(username, password string) (string, error) {
 
 // RequestSecret requests secrets from a ShoeServer
 func (c *ShoeClient) RequestSecret() (string, error) {
-
 	data := &RequestData{}
 	req, err := c.newRequest(data, "/secrets")
 	if err != nil {
@@ -136,7 +133,6 @@ func (c *ShoeClient) RequestSecret() (string, error) {
 
 // endpoint _should_ include the leading slash
 func (c *ShoeClient) newRequest(data *RequestData, endpoint string) (*http.Request, error) {
-
 	jsonStr, err := json.Marshal(data)
 	url := fmt.Sprintf("https://%s%s", c.serverURI, endpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
@@ -148,7 +144,6 @@ func (c *ShoeClient) newRequest(data *RequestData, endpoint string) (*http.Reque
 
 // RequestSecret requests secrets from a ShoeServer
 func (c *ShoeClient) Request(endpoint string, data *RequestData) (*http.Response, error) {
-
 	req, err := c.newRequest(data, endpoint)
 	if err != nil {
 		return nil, err

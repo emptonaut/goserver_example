@@ -38,6 +38,7 @@ func main() {
 
 	// setup server and go
 	s := shoe.NewServer(userRepo, sessionRepo)
+	log.Info("Server start")
 	http.Handle("/", s)
 	err = http.ListenAndServeTLS(":443", "server.crt", "server.key", nil)
 	if err != nil {

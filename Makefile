@@ -28,3 +28,6 @@ db:
 
 test: db
 	go test . -cover
+
+clean:
+	@rm -v $(SERVER_OUT) $(CLIENT_OUT) server.crt server.csr
