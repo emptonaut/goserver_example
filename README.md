@@ -7,12 +7,12 @@ The server takes no flags--just `make all` and run `bin/server`.
 
 The client has full help output. To see it, run `bin/client`.
 
-You can also see it all in action by running `demo.sh`.
+You can also see it all in action by running `demo.sh`. The expected output is shown in a screenshot below.
 
 ## Some random notes:
 
 - Database models following a loose repository pattern [(link)](https://medium.com/bumpers/our-go-is-fine-but-our-sql-is-great-b4857950a243)
-- [Gingko BDD](http://onsi.github.io/ginkgo/)
+- [Gingko BDD](http://onsi.github.io/ginkgo/) for the database repositories--almost 20% coverage!
 
 ## Prerequisites
 
