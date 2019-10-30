@@ -7,9 +7,11 @@ The server takes no flags--just `make all` and run `bin/server`.
 
 The client has full help output. To see it, run `bin/client`.
 
+You can also see it all in action by running `demo.sh`.
+
 ## Some random notes:
 
-- Database models following a loose repository pattern [reference](https://medium.com/bumpers/our-go-is-fine-but-our-sql-is-great-b4857950a243)
+- Database models following a loose repository pattern [(link)](https://medium.com/bumpers/our-go-is-fine-but-our-sql-is-great-b4857950a243)
 - [Gingko BDD](http://onsi.github.io/ginkgo/)
 
 ## Prerequisites
@@ -30,10 +32,9 @@ These are _some_ of the things that would need to be changed, or otherwise shoul
 - Naming consistencies
 - Server's hardcoded configuration in main.
 - Client should not be configured to read a specific root CA.
-- Documentation (at least sequence diagram in this readme)
-- The http.Client usage in the client should be replaced with an interface (ideally a built in type) for dependency injection
+- The http.Client usage in the client should be replaced with an interface (ideally a type that's from a standard Go library) for dependency injection
 - Very limited request format (see next point)
-- Should have used gRPC in hindsight
+- Should have used gRPC in hindsight, but this was fun to do from scratch anyway.
 
 ## Screenshot of Demo
 
